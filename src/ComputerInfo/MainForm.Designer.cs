@@ -21,6 +21,7 @@ namespace ComputerInfo
         private ListView lstApps;
         private Button btnRefresh;
         private Label lblStatus;
+        private CheckBox chkDarkMode;
 
         private void InitializeComponent()
         {
@@ -53,6 +54,13 @@ namespace ComputerInfo
             this.lstApps = new ListView();
             this.btnRefresh = new Button();
             this.lblStatus = new Label();
+            chkDarkMode = new CheckBox();
+            chkDarkMode.Text = "Dark Mode";
+            chkDarkMode.AutoSize = true;
+            chkDarkMode.Location = new Point(500, btnRefresh.Top + 5);
+            chkDarkMode.CheckedChanged += new System.EventHandler(this.chkDarkMode_CheckedChanged);
+            this.Controls.Add(chkDarkMode);
+
 
             Font labelFont = new Font("Segoe UI", 9F, FontStyle.Bold);
             int y = 10;

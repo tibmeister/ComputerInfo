@@ -1,6 +1,8 @@
 using System;
+using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Win32;
 
 namespace ComputerInfo
 {
@@ -18,6 +20,9 @@ namespace ComputerInfo
             lstApps.ColumnClick += new ColumnClickEventHandler(lstApps_ColumnClick);
 
             InitializePlaceholders();
+
+            bool isDarkMode = IsSystemInDarkMode();
+            chkDarkMode.Checked = isDarkMode;
         }
 
         protected override async void OnShown(EventArgs e)
@@ -45,6 +50,59 @@ namespace ComputerInfo
             lblUpdateVal.Text = "Loading...";
             lstApps.Items.Clear();
             lblStatus.Text = "";
+        }
+
+        private bool IsSystemInDarkMode()
+        {
+            try
+            {
+                using RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+                if (key != null)
+                {
+                    object value = key.GetValue("AppsUseLightTheme");
+                    if (value is int intValue)
+                    {
+                        return intValue == 0; // 0 = dark mode, 1 = light mode
+                    }
+                }
+            }
+            catch
+            {
+                // Fallback to light mode if detection fails
+            }
+
+            return false;
+        }
+
+        private void ApplyTheme(bool darkMode)
+        {
+            Color backColor = darkMode ? Color.FromArgb(30, 30, 30) : SystemColors.Control;
+            Color foreColor = darkMode ? Color.White : SystemColors.ControlText;
+
+            this.BackColor = backColor;
+
+            foreach (Control ctrl in this.Controls)
+            {
+                ctrl.ForeColor = foreColor;
+                if (ctrl is ListView)
+                {
+                    ctrl.BackColor = darkMode ? Color.FromArgb(50, 50, 50) : Color.White;
+                }
+                else if (ctrl is Button)
+                {
+                    ctrl.BackColor = SystemColors.Control;
+                    ctrl.ForeColor = SystemColors.ControlText;
+                }
+                else
+                {
+                    ctrl.BackColor = backColor;
+                    ctrl.ForeColor = foreColor;
+                }
+
+            }
+
+            lstApps.BackColor = darkMode ? Color.FromArgb(50, 50, 50) : Color.White;
+            lstApps.ForeColor = foreColor;
         }
 
         private Task LoadAllInfoAsync()
@@ -113,6 +171,12 @@ namespace ComputerInfo
 
             lstApps.ListViewItemSorter = new ListViewItemComparer(e.Column, sortOrder);
         }
+
+        private void chkDarkMode_CheckedChanged(object sender, EventArgs e)
+        {
+            ApplyTheme(chkDarkMode.Checked);
+        }
+
     }
 
     class ListViewItemComparer : System.Collections.IComparer
