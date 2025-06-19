@@ -20,6 +20,7 @@ namespace ComputerInfo
         private Label lblUpdate, lblUpdateVal;
         private ListView lstApps;
         private Button btnRefresh;
+        private Button btnExport;
         private Label lblStatus;
         private CheckBox chkDarkMode;
 
@@ -62,6 +63,7 @@ namespace ComputerInfo
             this.Controls.Add(chkDarkMode);
 
 
+
             Font labelFont = new Font("Segoe UI", 9F, FontStyle.Bold);
             int y = 10;
             int spacing = 40;
@@ -92,7 +94,7 @@ namespace ComputerInfo
             AddLabelPair(lblCpu, lblCpuVal, "CPU:");
             AddLabelPair(lblRam, lblRamVal, "RAM:");
             AddLabelPair(lblDisk, lblDiskVal, "Disk:");
-            y += 10; // extra vertical gap before next row
+            y += 20; // extra vertical gap before next row
             AddLabelPair(lblBoot, lblBootVal, "Last Boot:");
             AddLabelPair(lblUpdate, lblUpdateVal, "Latest Update:");
 
@@ -116,19 +118,33 @@ namespace ComputerInfo
             this.Controls.Add(lstApps);
             y += 210;
 
+            // btnRefresh.Text = "Refresh";
+            // btnRefresh.Location = new Point(10, y);
+            // btnRefresh.Size = new Size(100, 30);
+            // btnRefresh.Click += new System.EventHandler(this.btnRefresh_Click);
+            // this.Controls.Add(btnRefresh);
+
+            // Set Refresh button properties and add it
             btnRefresh.Text = "Refresh";
             btnRefresh.Location = new Point(10, y);
             btnRefresh.Size = new Size(100, 30);
             btnRefresh.Click += new System.EventHandler(this.btnRefresh_Click);
             this.Controls.Add(btnRefresh);
 
+            // Now that btnRefresh has a valid location and size, position btnExport relative to it
+            btnExport = new Button();
+            btnExport.Text = "Export";
+            btnExport.Location = new Point(btnRefresh.Right + 10, btnRefresh.Top);
+            btnExport.Size = new Size(100, 30);
+            btnExport.Click += new System.EventHandler(this.btnExport_Click);
+            this.Controls.Add(btnExport);
+
             lblStatus.Font = new Font("Segoe UI", 8F, FontStyle.Italic);
-            lblStatus.Location = new Point(120, y + 5);
+            lblStatus.Location = new Point(btnExport.Right + 10, y + 5);
             lblStatus.Size = new Size(400, 30);
             lblStatus.Text = "";
             this.Controls.Add(lblStatus);
-
-            this.ClientSize = new Size(620, y + 60);
+            this.ClientSize = new Size(620, y + 100); // instead of y + 60
             this.Text = "ComputerInfo";
         }
     }

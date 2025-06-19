@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
@@ -175,6 +176,55 @@ namespace ComputerInfo
         private void chkDarkMode_CheckedChanged(object sender, EventArgs e)
         {
             ApplyTheme(chkDarkMode.Checked);
+        }
+
+        private void btnExport_Click(object sender, EventArgs e)
+        {
+            using SaveFileDialog saveFileDialog = new SaveFileDialog
+            {
+                Filter = "CSV File|*.csv|Text File|*.txt",
+                Title = "Export System Information",
+                FileName = $"SystemInfo_{DateTime.Now:yyyyMMdd_HHmmss}"
+            };
+
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                try
+                {
+                    using StreamWriter writer = new StreamWriter(saveFileDialog.FileName);
+                    writer.WriteLine("=== Computer Info ===");
+                    writer.WriteLine($"Manufacturer: {lblManufacturerVal.Text}");
+                    writer.WriteLine($"Model: {lblModelVal.Text}");
+                    writer.WriteLine($"System Name: {lblSystemNameVal.Text}");
+                    writer.WriteLine($"Serial Number: {lblSerialVal.Text}");
+                    writer.WriteLine($"OS: {lblOsVal.Text}");
+                    writer.WriteLine($"Network Adapter: {lblAdapterVal.Text}");
+                    writer.WriteLine($"IP Address: {lblIpVal.Text}");
+                    writer.WriteLine($"Firewall Profile: {lblFirewallVal.Text}");
+                    writer.WriteLine($"CPU: {lblCpuVal.Text}");
+                    writer.WriteLine($"RAM: {lblRamVal.Text}");
+                    writer.WriteLine($"Disk: {lblDiskVal.Text}");
+                    writer.WriteLine($"Last Boot: {lblBootVal.Text}");
+                    writer.WriteLine($"Latest Update: {lblUpdateVal.Text}");
+                    writer.WriteLine();
+                    writer.WriteLine("=== Installed Applications ===");
+                    writer.WriteLine("Name,Version,Install Date");
+
+                    foreach (ListViewItem item in lstApps.Items)
+                    {
+                        string name = item.SubItems[0].Text.Replace(",", " ");
+                        string version = item.SubItems[1].Text.Replace(",", " ");
+                        string date = item.SubItems[2].Text;
+                        writer.WriteLine($"{name},{version},{date}");
+                    }
+
+                    MessageBox.Show("Export completed successfully!", "Export", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Export failed: {ex.Message}", "Export Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
         }
 
     }
