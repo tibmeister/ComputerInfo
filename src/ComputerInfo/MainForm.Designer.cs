@@ -94,7 +94,7 @@ namespace ComputerInfo
             AddLabelPair(lblCpu, lblCpuVal, "CPU:");
             AddLabelPair(lblRam, lblRamVal, "RAM:");
             AddLabelPair(lblDisk, lblDiskVal, "Disk:");
-            y += 20; // extra vertical gap before next row
+            y += 30; // extra vertical gap before next row
             AddLabelPair(lblBoot, lblBootVal, "Last Boot:");
             AddLabelPair(lblUpdate, lblUpdateVal, "Latest Update:");
 
