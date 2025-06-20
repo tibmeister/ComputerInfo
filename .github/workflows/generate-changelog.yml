@@ -1,0 +1,91 @@
+name: Generate Changelog and Export PDF on Tag Push
+
+on:
+  push:
+    tags:
+      - 'v*'           # Trigger only when tags like v1.0.15 are pushed
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛎️ Checkout Main Branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: 🏷️ Extract Current Tag
+        id: tag
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: 📄 Get Commits Since Last Tag
+        id: commits
+        run: |
+          LAST_TAG=$(git tag --sort=-creatordate | sed -n '2p')
+          echo "last_tag=$LAST_TAG" >> $GITHUB_OUTPUT
+          
+          if [ -z "$LAST_TAG" ]; then
+            git log --pretty=format:"- %h %s (%an, %ad)" --date=short > /tmp/new_commits.txt
+          else
+            git log $LAST_TAG..${{ steps.tag.outputs.tag }} \
+              --pretty=format:"- %h %s (%an, %ad)" --date=short > /tmp/new_commits.txt
+          fi
+
+      - name: 🖊️ Format Commits with Issue Links
+        run: |
+          sed -E 's/(#([0-9]+))/[\1](https:\/\/github.com\/${{ github.repository }}\/issues\/\2)/g' /tmp/new_commits.txt > /tmp/new_commits_formatted.txt
+
+      - name: 📝 Update CHANGELOG.md
+        run: |
+          NEW_ENTRIES=$(cat /tmp/new_commits_formatted.txt)
+
+          {
+            echo "## ${{ steps.tag.outputs.tag }} - $(date +'%Y-%m-%d')"
+            echo ""
+            echo "${NEW_ENTRIES}"
+            echo ""
+            echo "---"
+            echo ""
+            cat CHANGELOG.md
+          } > CHANGELOG.new.md
+          
+          mv CHANGELOG.new.md CHANGELOG.md
+
+      - name: 📥 Push CHANGELOG.md to changelog Branch
+        run: |
+          git fetch origin changelog || git checkout -b changelog
+          git checkout changelog
+          
+          cp CHANGELOG.md .
+          
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+
+          git add CHANGELOG.md
+          git commit -m "📋 Update CHANGELOG for ${{ steps.tag.outputs.tag }}" || echo "No changes."
+          
+          git push origin changelog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ⚡ Export CHANGELOG.md to PDF
+        uses: docker://ghcr.io/openlawlibrary/mdpdf:latest
+        with:
+          args: "CHANGELOG.md --out CHANGELOG.pdf"
+
+      - name: 🌐 Export CHANGELOG.md to HTML
+        uses: docker://ghcr.io/openlawlibrary/mdpdf:latest
+        with:
+          args: "CHANGELOG.md --out CHANGELOG.html"
+
+      - name: 📦 Upload CHANGELOG.pdf and HTML as Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            CHANGELOG.pdf
+            CHANGELOG.html
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

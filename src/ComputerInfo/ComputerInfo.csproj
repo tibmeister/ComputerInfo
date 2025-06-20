@@ -1,5 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- Load the current version and build number -->
+  <Import Project="version.props" />
+
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
@@ -10,8 +13,43 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
+  <!-- Set version statically during CI builds -->
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <Version>$(BaseVersion).$(BuildNumber)</Version>
+  </PropertyGroup>
+
+  <!-- Dependencies -->
   <ItemGroup>
     <PackageReference Include="System.Management" Version="9.0.6" />
   </ItemGroup>
+
+  <!-- Local-only build number increment -->
+  <Target Name="AutoIncrementVersion" BeforeTargets="BeforeBuild"
+          Condition="'$(GITHUB_ACTIONS)' != 'true'">
+    <PropertyGroup>
+      <NewBuildNumber>$([MSBuild]::Add($(BuildNumber), 1))</NewBuildNumber>
+      <FullVersion>$(BaseVersion).$(NewBuildNumber)</FullVersion>
+      <VersionPropsContent>
+        &lt;Project&gt;
+          &lt;PropertyGroup&gt;
+            &lt;BaseVersion&gt;$(BaseVersion)&lt;/BaseVersion&gt;
+            &lt;BuildNumber&gt;$(NewBuildNumber)&lt;/BuildNumber&gt;
+          &lt;/PropertyGroup&gt;
+        &lt;/Project&gt;
+      </VersionPropsContent>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      File="version.props"
+      Lines="$(VersionPropsContent)"
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true" />
+
+    <Message Importance="High" Text="Local Build Version: $(FullVersion)" />
+
+    <PropertyGroup>
+      <Version>$(FullVersion)</Version>
+    </PropertyGroup>
+  </Target>
 
 </Project>

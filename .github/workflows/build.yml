@@ -1,39 +1,56 @@
-name: Build and Publish ComputerInfo
+name: Build, Tag & Release
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - '**/*.cs'
-      - '**/*.csproj'
-      - '.github/workflows/build.yml'
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Set up .NET 8
-      uses: actions/setup-dotnet@v3
+    - name: Checkout
+      uses: actions/checkout@v4
       with:
-        dotnet-version: '8.0'
+        fetch-depth: 0  # Required for tagging
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.x
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore src/ComputerInfo/ComputerInfo.csproj
 
     - name: Build
-      run: dotnet build --configuration Release
+      run: dotnet build --configuration Release --no-restore src/ComputerInfo/ComputerInfo.csproj
 
     - name: Publish
-      run: dotnet publish --configuration Release --output ./publish --self-contained --runtime win-x64
+      run: dotnet publish src/ComputerInfo/ComputerInfo.csproj --configuration Release --output publish --no-restore
 
-    - name: Create Release Asset
-      uses: softprops/action-gh-release@v1
+    - name: Read Version from Props
+      id: version
+      run: |
+        $version = Select-String -Path src/ComputerInfo/version.props -Pattern "<BaseVersion>(.*)</BaseVersion>" | ForEach-Object { $_.Matches.Groups[1].Value }
+        $build = Select-String -Path src/ComputerInfo/version.props -Pattern "<BuildNumber>(.*)</BuildNumber>" | ForEach-Object { $_.Matches.Groups[1].Value }
+        $tag = "v$version.$build"
+        echo "tag=$tag" >> $env:GITHUB_OUTPUT
+
+    - name: Create Git Tag
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@users.noreply.github.com"
+        git tag ${{ steps.version.outputs.tag }}
+        git push origin ${{ steps.version.outputs.tag }}
+
+    - name: Zip Published App
+      run: Compress-Archive -Path publish\* -DestinationPath ComputerInfo.zip
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
       with:
-        files: ./publish/ComputerInfo.exe
+        tag_name: ${{ steps.version.outputs.tag }}
+        name: Release ${{ steps.version.outputs.tag }}
+        files: ComputerInfo.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
